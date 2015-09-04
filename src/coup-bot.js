@@ -2,9 +2,8 @@ const Rx = require('rx');
 const _ = require('underscore-plus');
 
 const Slack = require('slack-client');
+const Utils = require('./utils');
 const Coup = require('./coup');
-const MessageHelpers = require('./message-helpers');
-const PlayerInteraction = require('./player-interaction');
 
 class CoupBot {
   // Public: Creates a new instance of the bot.
@@ -33,8 +32,8 @@ class CoupBot {
 
     // Messages directed at the bot that contain the word "deal" are valid
     let startGameMessages = messages.where(e =>
-      MessageHelpers.containsUserMention(e.text, this.slack.self.id) &&
-        e.text.toLowerCase().match(/(let's play!)/));
+      Utils.containsUserMention(e.text, this.slack.self.id) &&
+        e.text.toLowerCase().match(/(let's play a game!)/));
 
     return startGameMessages
       .map(e => this.slack.getChannelGroupOrDMByID(e.channel))
@@ -61,7 +60,7 @@ class CoupBot {
   pollPlayersForGame(messages, channel) {
     this.isPolling = true;
 
-    return PlayerInteraction.pollPotentialPlayers(messages, channel)
+    return Utils.pollPotentialPlayers(messages, channel)
       .reduce((players, id) => {
         let user = this.slack.getUserByID(id);
         channel.send(`${user.name} has joined the game.`);
@@ -96,7 +95,7 @@ class CoupBot {
     let game = new Coup(this.slack, messages, channel, players);
 
     // Listen for messages directed at the bot containing 'quit game.'
-    messages.where(e => MessageHelpers.containsUserMention(e.text, this.slack.self.id) &&
+    messages.where(e => Utils.containsUserMention(e.text, this.slack.self.id) &&
       e.text.toLowerCase().match(/(let's end the game)/))
       .take(1)
       .subscribe(e => {
